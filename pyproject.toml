@@ -1,0 +1,32 @@
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project]
+name = "asciidoc_to_reqif"
+dynamic = ["version"]
+description = "Convert asciidoc files containing requirements to ReqIF format"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "LicenseRef-Proprietary" # TODO: open-source?
+keywords = ["ReqIF", "asciidoc"]
+authors = [
+    { name = "Klaus Neuschwander", email="klaus.neuschwander@loewensteinmedical.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+]
+dependencies = [
+]
+
+[project.urls]
+#source = "TODO"
+
+[project.scripts]
+asciidoc-to-reqif = "asciidoc_to_reqif.convert:main"
+
+[tool.pdm.version]
+source = "scm"
+
