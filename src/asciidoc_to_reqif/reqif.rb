@@ -76,13 +76,22 @@ class ReqIfConverter
     end
 
     def convert_section node
-        puts node
         self.try_add_reference node
         <<~EOS.chomp
         <section title="#{node.title}" index="#{node.index}">
         <!-- #{node.attributes} -->
         #{node.content}
         </section>
+        EOS
+    end
+
+    def convert_image node
+        dir = node.attributes.key?('imagesdir') ? node.attributes['imagesdir'] : ""
+        #self.try_add_reference node
+        <<~EOS.chomp
+        <image id="#{node.attributes['id']}" dir="#{dir}" src="#{node.attributes['target']}"/>
+        <!-- #{node.attributes} -->
+        <!-- #{node} -->
         EOS
     end
 
@@ -132,6 +141,8 @@ class ReqIfConverter
                     self.convert_admonition node
                 when 'olist', 'ulist'
                     self.convert_list node
+                when 'image'
+                    self.convert_image node
                 when 'sidebar'
                     if self.is_requirement node
                         self.convert_requirement node

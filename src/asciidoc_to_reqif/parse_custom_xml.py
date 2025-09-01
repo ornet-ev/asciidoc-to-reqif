@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import random
@@ -39,9 +40,10 @@ class ParagraphQueue:
 
 
 class _Parser:
-    def __init__(self, id_prefix: str):
+    def __init__(self, id_prefix: str, source_base: Path):
         self.parent_map = {}
-        self.id_prefix = id_prefix
+        self.id_prefix: str = id_prefix
+        self.source_base: Path = source_base
 
     def make_id(self, original_ref_id):
         return f"{self.id_prefix}_{original_ref_id}"
@@ -68,6 +70,11 @@ class _Parser:
             elif child.tag == "requirement":
                 child_wi += paragraph_queue.flush()
                 c, a = self.parse_requirement(child)
+                child_wi.append(c)
+                attachments.update(a)
+            elif child.tag in ("image",):
+                child_wi += paragraph_queue.flush()
+                c, a = self.parse_image(child)
                 child_wi.append(c)
                 attachments.update(a)
             # 'note's cannot occur here
@@ -146,6 +153,25 @@ class _Parser:
             text=text,
         ), attachments
 
+    def parse_image(self, node) -> tuple[InfoItem, dict[str, Path]]:
+        relative_file = Path(node.attrib["src"])
+        absolute_file: Path = (node.attrib["dir"] or self.source_base) / relative_file
+        if node.attrib["id"]:
+            figure_id = node.attrib["id"]
+        else:
+            with open(absolute_file, "rb", buffering=0) as f:
+                figure_id = hashlib.file_digest(f, "sha256").hexdigest()
+        local_file = f"{figure_id}.png"
+        attachments: dict[str, Path]  = {local_file: absolute_file}
+        t = ET.Element("xhtml:object", attrib={"data": local_file, "type": "image/png"})
+        item = InfoItem(
+            is_note=False,
+            ref_id=self.make_id(figure_id),
+            title=figure_id,
+            text=[t],
+        )
+        return item, attachments
+
     def parse(self, filename: Path) -> tuple[Document, dict[str, Path]]:
         root = ET.parse(filename)
         self.parent_map = {c: p for p in root.iter() for c in p}
@@ -169,8 +195,8 @@ class _Parser:
                 f"expected requirements in JSON file do not match asciidoc input:\nJSON:     {expected_ids}\nASCIIDOC: {found_ids}")
 
 
-def parse(filename: Path, id_prefix: str, json_file: Path | None) -> tuple[Document, dict[str, Path]]:
-    parser = _Parser(id_prefix)
+def parse(filename: Path, id_prefix: str, source_base: Path, json_file: Path | None) -> tuple[Document, dict[str, Path]]:
+    parser = _Parser(id_prefix, source_base)
     document, attachments = parser.parse(filename)
     if json_file:
         parser.validate_json(document, json_file)

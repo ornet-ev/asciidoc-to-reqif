@@ -38,7 +38,7 @@ def main():
         xml_export = tmp_dir / args.input.with_suffix(".xml").name
         req_if = tmp_dir / xml_export.with_suffix(".reqif").name
         id_prefix = document_name
-        document, attachments = parse_xml(xml_export, id_prefix, args.json)
+        document, attachments = parse_xml(xml_export, id_prefix, args.input.parent, args.json)
         build(args.base, req_if , document, document_title=document_name, commit_hash="deadbeef") # TODO: parse revision
         package(req_if, args.output, other_files=attachments)
 
