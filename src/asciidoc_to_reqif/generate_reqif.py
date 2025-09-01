@@ -69,18 +69,19 @@ def make_wi(objects: ET.Element, wi: WorkItem, date):
         text_def_ref = ET.SubElement(text_def, "ATTRIBUTE-DEFINITION-STRING-REF")
         text_def_ref.text = "heading_title"
 
-def instantiate_wi(parent: ET.Element, wi: WorkItem, date, filter_role: str | None):
+def instantiate_wi(parent: ET.Element, wi: WorkItem, date, filter_role: str | None, show_freetext: bool):
     if isinstance(wi, Heading):
-        instantiate_heading(parent=parent, heading=wi, date=date, filter_role=filter_role)
+        instantiate_heading(parent=parent, heading=wi, date=date, filter_role=filter_role, show_freetext=show_freetext)
     elif isinstance(wi, Requirement):
         instantiate_requirement(parent=parent, requirement=wi, date=date, filter_role=filter_role)
     elif isinstance(wi, InfoItem):
-        instantiate_freestanding_info(parent=parent, info=wi, date=date, filter_role=filter_role)
+        if show_freetext:
+            instantiate_freestanding_info(parent=parent, info=wi, date=date, filter_role=filter_role)
     else:
         raise NotImplementedError()
 
 
-def instantiate_heading(parent: ET.Element, heading: Heading, date, filter_role: str | None):
+def instantiate_heading(parent: ET.Element, heading: Heading, date, filter_role: str | None, show_freetext: bool):
     logger.debug("instantiate heading %s: %s", heading.ref_id, heading.title)
     container = ET.SubElement(parent, "SPEC-HIERARCHY",
                               attrib={"IDENTIFIER": f"requirements_{filter_role}_{heading.ref_id}",
@@ -92,7 +93,7 @@ def instantiate_heading(parent: ET.Element, heading: Heading, date, filter_role:
     if heading.children:
         children_container = ET.SubElement(container, "CHILDREN")
         for child_wi in heading.children:
-            instantiate_wi(children_container, child_wi, date, filter_role)
+            instantiate_wi(children_container, child_wi, date, filter_role, show_freetext=show_freetext)
 
 
 def instantiate_requirement(parent: ET.Element, requirement: Requirement, date, filter_role: str | None):
@@ -177,26 +178,22 @@ def build(base_file: Path | None, out_file: Path, document: Document, document_t
     add_enum(datatypes, "enum_role", list(known_roles), date)
 
 
-    req_document = ET.SubElement(documents, "SPECIFICATION",
-                                 attrib={"IDENTIFIER": f"{document.name}_full", "LAST-CHANGE": date,
-                                         "LONG-NAME": document.name})
+    make_document(documents, document, f"{document.name}_full", f"{document.name} - full", date, None, True)
+    make_document(documents, document, f"{document.name}", f"{document.name} - requirements", date, None, False)
+    for role in known_roles:
+        make_document(documents, document, f"{document.name}_{role}", f"{document.name} - {role} requirements", date, role, False)
+    root.write(out_file, xml_declaration=True, method="xml", encoding="UTF-8")
+
+def make_document(documents_element: ET.Element, document: Document, identifier: str, long_name: str, date: str, filter_role: str|None, show_freetext: bool):
+    req_document = ET.SubElement(documents_element, "SPECIFICATION",
+                                 attrib={"IDENTIFIER": f"{identifier}_full", "LAST-CHANGE": date,
+                                         "LONG-NAME": long_name})
     document_type = ET.SubElement(req_document, "TYPE")
     document_type_ref = ET.SubElement(document_type, "SPECIFICATION-TYPE-REF")
     document_type_ref.text = "requirementdoc"
     children = ET.SubElement(req_document, "CHILDREN")
     for wi in document.children:
-        instantiate_wi(children, wi, date, None)
-    for role in known_roles:
-        role_document = ET.SubElement(documents, "SPECIFICATION",
-                                      attrib={"IDENTIFIER": f"{document.name}_{role}", "LAST-CHANGE": date,
-                                              "LONG-NAME": f"{document.name} - {role} requirements"})
-        document_type = ET.SubElement(role_document, "TYPE")
-        document_type_ref = ET.SubElement(document_type, "SPECIFICATION-TYPE-REF")
-        document_type_ref.text = "requirementdoc"
-        children = ET.SubElement(role_document, "CHILDREN")
-        for wi in document.children:
-            instantiate_wi(children, wi, date, role)
-    root.write(out_file, xml_declaration=True, method="xml", encoding="UTF-8")
+        instantiate_wi(children, wi, date, filter_role=filter_role, show_freetext=show_freetext)
 
 
 def package(reqif_file: Path, out_file: Path, other_files: dict[str, Path]):

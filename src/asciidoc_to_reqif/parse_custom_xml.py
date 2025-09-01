@@ -7,12 +7,15 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from .model import Requirement, Heading, InfoItem, Document, WorkItem, get_all_items
 
+
 def random_id():
     return "".join(random.choices(string.ascii_lowercase, k=20))
+
 
 Attachments = dict[str, Path]
 
 logger = logging.getLogger(__name__)
+
 
 class ParagraphQueue:
     def __init__(self):
@@ -35,15 +38,20 @@ class ParagraphQueue:
         return result
 
 
-class  _Parser:
-    def __init__(self):
+class _Parser:
+    def __init__(self, id_prefix: str):
         self.parent_map = {}
+        self.id_prefix = id_prefix
+
+    def make_id(self, original_ref_id):
+        return f"{self.id_prefix}_{original_ref_id}"
+
     def parse_document(self, node: ET.Element) -> tuple[Document, Attachments]:
         assert node.tag == "document"
         children, attachments = self.parse_children(node)
         return Document(
             name=node.attrib["name"],
-            ref_id=node.attrib["name"],
+            ref_id=self.make_id(node.attrib["name"]),
             children=children,
         ), attachments
 
@@ -73,7 +81,7 @@ class  _Parser:
     def parse_section(self, section: ET.Element) -> tuple[Heading, Attachments]:
         children, attachments = self.parse_children(section)
         return Heading(
-            ref_id=self.get_heading_id(section),
+            ref_id=self.make_id(self.get_heading_id(section)),
             title=section.attrib["title"],
             children=children,
         ), attachments
@@ -95,7 +103,6 @@ class  _Parser:
             attachments = {}
         return p, attachments
 
-
     def parse_flat_children(self, children: list[ET.Element]) -> tuple[list[ET.Element], Attachments]:
         result_children: list[ET.Element] = []
         attachments: Attachments = {}
@@ -114,7 +121,7 @@ class  _Parser:
             if child.tag == "note":
                 child_text, a = self.parse_flat_children([c for c in child])
                 notes.append(InfoItem(
-                    ref_id=f"{ref_id}_note{len(notes)}",
+                    ref_id=self.make_id(f"{ref_id}_note{len(notes)}"),
                     title=f"{ref_id}_note{len(notes)}",
                     text=child_text,
                     is_note=True,
@@ -130,7 +137,7 @@ class  _Parser:
         assert category in ("technical", "process", "documentation", "other")
 
         return Requirement(
-            ref_id=ref_id,
+            ref_id=self.make_id(ref_id),
             title=requirement.attrib["title"],
             keyword=keyword,
             category=category,
@@ -138,7 +145,6 @@ class  _Parser:
             notes=notes,
             text=text,
         ), attachments
-
 
     def parse(self, filename: Path) -> tuple[Document, dict[str, Path]]:
         root = ET.parse(filename)
@@ -151,16 +157,23 @@ class  _Parser:
         parent_index = self.get_heading_id(self.parent_map[node]) if node in self.parent_map else "root"
         return f"{parent_index}_{this_index}"
 
-def parse(filename: Path) -> tuple[Document, dict[str, Path]]:
-    parser = _Parser()
-    return parser.parse(filename)
+    def validate_json(self, document: Document, json_file: Path):
+        with open(json_file, "r") as f:
+            json_data = json.load(f)
+        expected_ids = sorted([self.make_id(f"r{n}") for n in json_data["requirements"]["numbers"]])
+        found_requirements = list(
+            item for child in document.children for item in get_all_items(child) if isinstance(item, Requirement))
+        found_ids = sorted([r.ref_id for r in found_requirements])
+        if expected_ids != found_ids:
+            raise RuntimeError(
+                f"expected requirements in JSON file do not match asciidoc input:\nJSON:     {expected_ids}\nASCIIDOC: {found_ids}")
 
-def validate_json(document: Document, json_file: Path):
-    with open(json_file, "r") as f:
-        json_data = json.load(f)
-    expected_ids = sorted([str(n) for n in json_data["requirements"]["numbers"]])
-    found_requirements = list(item for child in document.children for item in get_all_items(child) if isinstance(item, Requirement))
-    found_ids = sorted([r.ref_id.removeprefix("r") for r in found_requirements])
-    if expected_ids != found_ids:
-        raise RuntimeError(f"expected requirements in JSON file do not match asciidoc input:\nJSON:     {expected_ids}\nASCIIDOC: {found_ids}")
 
+def parse(filename: Path, id_prefix: str, json_file: Path | None) -> tuple[Document, dict[str, Path]]:
+    parser = _Parser(id_prefix)
+    document, attachments = parser.parse(filename)
+    if json_file:
+        parser.validate_json(document, json_file)
+    else:
+        logger.warning("no JSON file specified, no cross-check performed")
+    return document, attachments

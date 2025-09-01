@@ -5,7 +5,7 @@ import subprocess
 import datetime # TODO: remove
 import logging
 
-from .parse_custom_xml import parse as parse_xml, validate_json
+from .parse_custom_xml import parse as parse_xml
 from .generate_reqif import build, package
 
 
@@ -29,6 +29,7 @@ def parse_args():
 def main():
     args = parse_args()
     ruby_helper = Path(__file__).parent / "reqif.rb"
+    document_name = args.input.stem
     if args.tmpdir:
         tempfile.tempdir = str(args.tmpdir)
     with tempfile.TemporaryDirectory(delete=not args.keep_tmp, prefix=datetime.datetime.now().isoformat(timespec="seconds")) as tmp_dir_str:
@@ -36,12 +37,9 @@ def main():
         subprocess.run(["asciidoctor", "-r", ruby_helper , "--backend", "plainxml", "--trace", "--destination-dir", tmp_dir, args.input], check=True)
         xml_export = tmp_dir / args.input.with_suffix(".xml").name
         req_if = tmp_dir / xml_export.with_suffix(".reqif").name
-        document, attachments = parse_xml(xml_export)
-        if args.json:
-            validate_json(document, json_file=args.json)
-        else:
-            logging.warning("no JSON file specified (--json), no cross-check performed")
-        build(args.base, req_if , document, document_title=args.input.stem, commit_hash="deadbeef") # TODO: parse revision
+        id_prefix = document_name
+        document, attachments = parse_xml(xml_export, id_prefix, args.json)
+        build(args.base, req_if , document, document_title=document_name, commit_hash="deadbeef") # TODO: parse revision
         package(req_if, args.output, other_files=attachments)
 
 
