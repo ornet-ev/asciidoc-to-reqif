@@ -31,7 +31,7 @@ class ParagraphQueue:
         if self.queued_paragraphs:
             ref_id = str(random_id())
             logger.debug("flushing item with %s sub-items: %s", len(self.queued_paragraphs), self.queued_paragraphs)
-            item = InfoItem(text=self.queued_paragraphs, ref_id=ref_id, title=ref_id)
+            item = InfoItem(text=self.queued_paragraphs, ref_id=ref_id, title=ref_id, has_stable_id=False)
             logger.debug("%s", item)
             result.append(item)
             self.paragraph_index += 1
@@ -132,6 +132,7 @@ class _Parser:
                     title=f"{ref_id}_note{len(notes)}",
                     text=child_text,
                     is_note=True,
+                    has_stable_id=True,
                 ))
             else:
                 c, a = self.parse_leaf_block(child)
@@ -156,7 +157,8 @@ class _Parser:
     def parse_image(self, node) -> tuple[InfoItem, dict[str, Path]]:
         relative_file = Path(node.attrib["src"])
         absolute_file: Path = (node.attrib["dir"] or self.source_base) / relative_file
-        if node.attrib["id"]:
+        has_stable_id = bool(node.attrib["id"])
+        if has_stable_id:
             figure_id = node.attrib["id"]
         else:
             with open(absolute_file, "rb", buffering=0) as f:

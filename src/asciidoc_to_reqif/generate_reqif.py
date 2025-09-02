@@ -75,7 +75,7 @@ def instantiate_wi(parent: ET.Element, wi: WorkItem, date, filter_role: str | No
     elif isinstance(wi, Requirement):
         instantiate_requirement(parent=parent, requirement=wi, date=date, filter_role=filter_role)
     elif isinstance(wi, InfoItem):
-        if show_freetext:
+        if show_freetext or wi.has_stable_id:
             instantiate_freestanding_info(parent=parent, info=wi, date=date, filter_role=filter_role)
     else:
         raise NotImplementedError()

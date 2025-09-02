@@ -30,7 +30,7 @@ class Document:
 @dataclass
 class InfoItem(ContentWorkItem):
     is_note: bool = False
-
+    has_stable_id: bool = False
 
 @dataclass
 class Requirement(ContentWorkItem):
