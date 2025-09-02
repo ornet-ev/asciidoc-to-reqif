@@ -19,9 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 class ParagraphQueue:
-    def __init__(self):
+    def __init__(self, ref_id_prefix: str):
         self.queued_paragraphs: list[ET.Element] = []
         self.paragraph_index = 0
+        self.ref_id_prefix: str = ref_id_prefix
 
     def push(self, element: ET.Element):
         self.queued_paragraphs.append(element)
@@ -29,7 +30,7 @@ class ParagraphQueue:
     def flush(self) -> list[WorkItem]:
         result = []
         if self.queued_paragraphs:
-            ref_id = str(random_id())
+            ref_id = f"{self.ref_id_prefix}_{self.paragraph_index}"
             logger.debug("flushing item with %s sub-items: %s", len(self.queued_paragraphs), self.queued_paragraphs)
             item = InfoItem(text=self.queued_paragraphs, ref_id=ref_id, title=ref_id, has_stable_id=False)
             logger.debug("%s", item)
@@ -50,21 +51,21 @@ class _Parser:
 
     def parse_document(self, node: ET.Element) -> tuple[Document, Attachments]:
         assert node.tag == "document"
-        children, attachments = self.parse_children(node)
+        children, attachments = self.parse_children(node, chapter_ref_id="document")
         return Document(
             name=node.attrib["name"],
             ref_id=self.make_id(node.attrib["name"]),
             children=children,
         ), attachments
 
-    def parse_children(self, document_or_section: ET.Element) -> tuple[list[WorkItem], Attachments]:
-        paragraph_queue = ParagraphQueue()
+    def parse_children(self, document_or_section: ET.Element, chapter_ref_id: str) -> tuple[list[WorkItem], Attachments]:
+        paragraph_queue = ParagraphQueue(ref_id_prefix=chapter_ref_id)
         child_wi: list[WorkItem] = []
         attachments: Attachments = {}
-        for child in document_or_section:
+        for i, child in enumerate(document_or_section):
             if child.tag == "section":
                 child_wi += paragraph_queue.flush()
-                c, a = self.parse_section(child)
+                c, a = self.parse_section(child, chapter_ref_id=f"{chapter_ref_id}_{i}")
                 child_wi.append(c)
                 attachments.update(a)
             elif child.tag == "requirement":
@@ -90,8 +91,8 @@ class _Parser:
         child_wi += paragraph_queue.flush()
         return child_wi, attachments
 
-    def parse_section(self, section: ET.Element) -> tuple[Heading, Attachments]:
-        children, attachments = self.parse_children(section)
+    def parse_section(self, section: ET.Element, chapter_ref_id: str) -> tuple[Heading, Attachments]:
+        children, attachments = self.parse_children(section, chapter_ref_id=chapter_ref_id)
         return Heading(
             ref_id=self.make_id(self.get_heading_id(section)),
             title=section.attrib["title"],
