@@ -13,7 +13,8 @@
     <CORE-CONTENT>
         <REQ-IF-CONTENT>
             <DATATYPES>
-                <DATATYPE-DEFINITION-XHTML IDENTIFIER="xhtmldatadefinition" LAST-CHANGE="2025-01-01T00:00:00"/>
+                <DATATYPE-DEFINITION-XHTML IDENTIFIER="data_definition_xhtmldata" LAST-CHANGE="2025-01-01T00:00:00"/>
+                <DATATYPE-DEFINITION-STRING IDENTIFIER="data_definition_string" LAST-CHANGE="2025-01-01T00:00:00" MAX-LENGTH="10000"/>
                 <!-- requirement type -->
                 <DATATYPE-DEFINITION-ENUMERATION IDENTIFIER="enum_requirement_type" LAST-CHANGE="2025-01-01T00:00:00"
                                                  LONG-NAME="Applies to role">
@@ -51,11 +52,18 @@
                 <!-- requirement (any) -->
                 <SPEC-OBJECT-TYPE IDENTIFIER="requirement" LAST-CHANGE="2025-01-01T00:00:00" LONG-NAME="Requirement">
                     <SPEC-ATTRIBUTES>
+                        <!-- title -->
+                        <ATTRIBUTE-DEFINITION-STRING IDENTIFIER="requirement_title"
+                                                     LAST-CHANGE="2025-01-01T00:00:00">
+                            <TYPE>
+                                <DATATYPE-DEFINITION-STRING-REF>data_definition_string</DATATYPE-DEFINITION-STRING-REF>
+                            </TYPE>
+                        </ATTRIBUTE-DEFINITION-STRING>
                         <!-- text -->
                         <ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="requirement_text" LAST-CHANGE="2025-01-01T00:00:00"
                                                     IS-EDITABLE="false">
                             <TYPE>
-                                <DATATYPE-DEFINITION-XHTML-REF>xhtmldatadefinition</DATATYPE-DEFINITION-XHTML-REF>
+                                <DATATYPE-DEFINITION-XHTML-REF>data_definition_xhtmldata</DATATYPE-DEFINITION-XHTML-REF>
                             </TYPE>
                         </ATTRIBUTE-DEFINITION-XHTML>
                         <!-- type -->
@@ -84,10 +92,18 @@
                 <!-- info item -->
                 <SPEC-OBJECT-TYPE IDENTIFIER="info_item" LAST-CHANGE="2025-01-01T00:00:00" LONG-NAME="info item">
                     <SPEC-ATTRIBUTES>
+                        <!-- title -->
+                        <ATTRIBUTE-DEFINITION-STRING IDENTIFIER="info_item_title"
+                                                     LAST-CHANGE="2025-01-01T00:00:00">
+                            <TYPE>
+                                <DATATYPE-DEFINITION-STRING-REF>data_definition_string</DATATYPE-DEFINITION-STRING-REF>
+                            </TYPE>
+                        </ATTRIBUTE-DEFINITION-STRING>
+                        <!-- text -->
                         <ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="info_item_text" LAST-CHANGE="2025-01-01T00:00:00"
                                                     IS-EDITABLE="false">
                             <TYPE>
-                                <DATATYPE-DEFINITION-XHTML-REF>xhtmldatadefinition</DATATYPE-DEFINITION-XHTML-REF>
+                                <DATATYPE-DEFINITION-XHTML-REF>data_definition_xhtmldata</DATATYPE-DEFINITION-XHTML-REF>
                             </TYPE>
                         </ATTRIBUTE-DEFINITION-XHTML>
                     </SPEC-ATTRIBUTES>
@@ -95,10 +111,18 @@
                 <!-- note item -->
                 <SPEC-OBJECT-TYPE IDENTIFIER="note_item" LAST-CHANGE="2025-01-01T00:00:00" LONG-NAME="Requirement note item">
                     <SPEC-ATTRIBUTES>
+                        <!-- title -->
+                        <ATTRIBUTE-DEFINITION-STRING IDENTIFIER="note_item_title"
+                                                     LAST-CHANGE="2025-01-01T00:00:00">
+                            <TYPE>
+                                <DATATYPE-DEFINITION-STRING-REF>data_definition_string</DATATYPE-DEFINITION-STRING-REF>
+                            </TYPE>
+                        </ATTRIBUTE-DEFINITION-STRING>
+                        <!-- text -->
                         <ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="note_item_text" LAST-CHANGE="2025-01-01T00:00:00"
                                                     IS-EDITABLE="false">
                             <TYPE>
-                                <DATATYPE-DEFINITION-XHTML-REF>xhtmldatadefinition</DATATYPE-DEFINITION-XHTML-REF>
+                                <DATATYPE-DEFINITION-XHTML-REF>data_definition_xhtmldata</DATATYPE-DEFINITION-XHTML-REF>
                             </TYPE>
                         </ATTRIBUTE-DEFINITION-XHTML>
                     </SPEC-ATTRIBUTES>
@@ -109,7 +133,7 @@
                         <ATTRIBUTE-DEFINITION-STRING IDENTIFIER="heading_title" LAST-CHANGE="2025-01-01T00:00:00"
                                                     IS-EDITABLE="false">
                             <TYPE>
-                                <DATATYPE-DEFINITION-STRING-REF>xhtmldatadefinition</DATATYPE-DEFINITION-STRING-REF>
+                                <DATATYPE-DEFINITION-STRING-REF>data_definition_xhtmldata</DATATYPE-DEFINITION-STRING-REF>
                             </TYPE>
                         </ATTRIBUTE-DEFINITION-STRING>
                     </SPEC-ATTRIBUTES>

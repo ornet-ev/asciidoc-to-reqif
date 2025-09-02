@@ -54,6 +54,11 @@ def make_wi(objects: ET.Element, wi: WorkItem, date):
     values = ET.SubElement(spec_object, "VALUES")
 
     if isinstance(wi, ContentWorkItem):
+        title = ET.SubElement(values, "ATTRIBUTE-VALUE-STRING", attrib={"THE-VALUE": wi.title})
+        title_def = ET.SubElement(title, "DEFINITION")
+        title_def_ref = ET.SubElement(title_def, "ATTRIBUTE-DEFINITION-STRING-REF")
+        title_def_ref.text = type_ref.text + "_title"
+
         text = ET.SubElement(values, "ATTRIBUTE-VALUE-XHTML")
         text_def = ET.SubElement(text, "DEFINITION")
         text_def_ref = ET.SubElement(text_def, "ATTRIBUTE-DEFINITION-XHTML-REF")
