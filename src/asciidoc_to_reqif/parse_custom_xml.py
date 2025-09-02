@@ -77,6 +77,11 @@ class _Parser:
                 c, a = self.parse_image(child)
                 child_wi.append(c)
                 attachments.update(a)
+            elif child.tag in ("table",):
+                child_wi += paragraph_queue.flush()
+                c, a = self.parse_table(child)
+                child_wi.append(c)
+                attachments.update(a)
             # 'note's cannot occur here
             else:
                 p, a = self.parse_leaf_block(child)
@@ -171,8 +176,21 @@ class _Parser:
             ref_id=self.make_id(figure_id),
             title=figure_id,
             text=[t],
+            has_stable_id=has_stable_id,
         )
         return item, attachments
+
+    def parse_table(self, node) -> tuple[InfoItem, dict[str, Path]]:
+        has_stable_id = bool(node.attrib["id"])
+        table_id = node.attrib["id"] if has_stable_id else random_id()
+        item = InfoItem(
+            is_note=False,
+            ref_id=self.make_id(table_id),
+            title=table_id,
+            text=[child for child in node],
+            has_stable_id=has_stable_id,
+        )
+        return item, {}
 
     def parse(self, filename: Path) -> tuple[Document, dict[str, Path]]:
         root = ET.parse(filename)

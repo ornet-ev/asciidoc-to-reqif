@@ -95,6 +95,31 @@ class ReqIfConverter
         EOS
     end
 
+    def convert_table node
+        content = ""
+        node.rows.by_section.each do |sections|
+            part_tag = "xhtml:t#{sections[0]}"
+            content += "<#{part_tag}>"
+            sections[1].each do |row|
+                content += "<xhtml:tr>"
+                row.each do |cell|
+                    cell_content = cell.inner_document ? cell.inner_document.content : cell.text
+                    content += "<xhtml:td colspan=\"#{cell.colspan ? cell.colspan : 1}\">#{cell_content}</xhtml:td>"
+                end
+                content += "</xhtml:tr>"
+            end
+            content += "</#{part_tag}>"
+        end
+        <<~EOS.chomp
+        <table id="#{node.attributes['id']}">
+        <xhtml:table>
+        <!-- #{node.attributes} -->
+        #{content}
+        </xhtml:table>
+        </table>
+        EOS
+    end
+
     def convert_inline_anchor node
         key = node.attributes['refid']
         if @references.key?(key)
@@ -143,6 +168,8 @@ class ReqIfConverter
                     self.convert_list node
                 when 'image'
                     self.convert_image node
+                when 'table'
+                    self.convert_table node
                 when 'sidebar'
                     if self.is_requirement node
                         self.convert_requirement node
