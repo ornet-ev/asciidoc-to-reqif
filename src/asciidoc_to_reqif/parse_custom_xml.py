@@ -135,7 +135,7 @@ class _Parser:
                 child_text, a = self.parse_flat_children([c for c in child])
                 notes.append(InfoItem(
                     ref_id=self.make_id(f"{ref_id}_note{len(notes)}"),
-                    title=f"{ref_id}_note{len(notes)}",
+                    title=f"note {len(notes)+1}",
                     text=child_text,
                     is_note=True,
                     has_stable_id=True,
