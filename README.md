@@ -2,23 +2,27 @@
 
 This folder contains the tooling to convert asciidoc to [ReqIF](https://www.omg.org/spec/ReqIF/20110401/reqif.xsd) format.
 
-## Known limitations
-Currently, the exporter only supports:
+## Features
+
+### Supported features
 * Plain text
 * Cross-references
 * lists (ordered/unordered)
+* images
+* tables
 * Requirements with role-tags
 * Notes to requirements
 
-Currently **not** supported:
-* images
-* formulas
-* tables
-* automatically generated content like ICS-tables
+
+### Hard limitations
+These limitations are inherent in the process, and will probably never be solved:
+* It is not possible to link to glossary items using text anchors.
+  This is due to the fact that ReqIF does not support linking in text to other spec items.
+  Some tools like Polarion allow using HTML-anchors. However, this would require knowledge of the URL of the item to be linked, but this URL is different for each ALM instance and may not even be defined prior to import.
 
 ## Output formats
 It generates a single file with different variants.
-Depending on your ALM-tool, importing all documents may fail.
+Depending on your ALM-tool, importing multiple documents may fail.
 Instead, you should choose a specific document or set of documents to import, or you will end up with redundant information and multiple instances of the same object.
 
 ### Full document
@@ -28,10 +32,15 @@ Therefore, all objects which are not explicitly tagged with an ID will not have 
 If you import this document regularly, all non-requirement objects will appear as deleted/rejected and new objects will appear.
 This document is therefore not recommended for continuous importing of draft documents.
 
-### Role-based requirements document
-For each role defined in asciidoc, there will be one ReqIF specification document which includes all requirements for this role.
-This document also includes all notes which are added to a specific requirement block.
+### Full document
+This document contains all requirements and their notes, but no freetext info items.
+This document is suitable for continuous importing of draft documents.
+This is the document to choose if you want to make sure you have all requirements for traceability, but don't care about the explanations around the text.
 
+### Role-based requirements documents
+For each role defined in asciidoc, there is one document which includes all requirements for this role and their notes.
+This document is suitable for continuous importing of draft documents.
+This is the document to choose if you only want to implement one role.
 
 ## Prerequisites
 The following is required to run this tool:
@@ -52,6 +61,6 @@ Use `--help` to get more options.
 
 ## Technical details
 This backend consists of two parts:
-. A ruby-script to be used as an asciidoctor-backend which generates an intermediate xml representation.
-. A python package which converts the intermediate xml to ReqIF format
+* A ruby-script to be used as an asciidoctor-backend which generates an intermediate xml representation.
+* A python package which converts the intermediate xml to ReqIF format
 The python package wraps the calls to asciidoctor for ease of use.
