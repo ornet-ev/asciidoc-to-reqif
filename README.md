@@ -32,7 +32,7 @@ Therefore, all objects which are not explicitly tagged with an ID will not have 
 If you import this document regularly, all non-requirement objects will appear as deleted/rejected and new objects will appear.
 This document is therefore not recommended for continuous importing of draft documents.
 
-### Full document
+### Requirements document
 This document contains all requirements and their notes, but no freetext info items.
 This document is suitable for continuous importing of draft documents.
 This is the document to choose if you want to make sure you have all requirements for traceability, but don't care about the explanations around the text.
