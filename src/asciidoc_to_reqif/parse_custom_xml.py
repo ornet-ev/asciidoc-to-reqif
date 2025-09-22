@@ -41,10 +41,11 @@ class ParagraphQueue:
 
 
 class _Parser:
-    def __init__(self, id_prefix: str, source_base: Path):
+    def __init__(self, id_prefix: str, source_base: Path, generated_base: Path):
         self.parent_map = {}
         self.id_prefix: str = id_prefix
         self.source_base: Path = source_base
+        self.generated_base: Path = generated_base
 
     def make_id(self, original_ref_id):
         return f"{self.id_prefix}_{original_ref_id}"
@@ -160,9 +161,23 @@ class _Parser:
             text=text,
         ), attachments
 
+    def get_absolute_attachment_path(self, relative_file: Path, base_dir: Path|None) -> Path:
+        if base_dir:
+            return base_dir / relative_file
+        absolute_source = self.source_base / relative_file
+        absolute_generated = self.generated_base / relative_file
+        if absolute_source.exists() and absolute_generated.exists() and absolute_source != absolute_generated:
+            raise RuntimeError(f"Relative file {relative_file} is ambiguous: both {absolute_source} and {absolute_generated} exist")
+        result = absolute_source if absolute_source.exists() else (absolute_generated if absolute_generated.exists() else None)
+        logger.debug("attachment %s can be found at %s", relative_file, result)
+        if not result:
+            raise RuntimeError(f"Neither {absolute_source} nor {absolute_generated} exist")
+        return result
+
+
     def parse_image(self, node) -> tuple[InfoItem, dict[str, Path]]:
         relative_file = Path(node.attrib["src"])
-        absolute_file: Path = (node.attrib["dir"] or self.source_base) / relative_file
+        absolute_file: Path = self.get_absolute_attachment_path(Path("images") / relative_file, node.attrib["dir"])
         has_stable_id = bool(node.attrib["id"])
         if has_stable_id:
             figure_id = node.attrib["id"]
@@ -216,8 +231,8 @@ class _Parser:
                 f"expected requirements in JSON file do not match asciidoc input:\nJSON:     {expected_ids}\nASCIIDOC: {found_ids}")
 
 
-def parse(filename: Path, id_prefix: str, source_base: Path, json_file: Path | None) -> tuple[Document, dict[str, Path]]:
-    parser = _Parser(id_prefix, source_base)
+def parse(filename: Path, id_prefix: str, source_base: Path, generated_base: Path, json_file: Path | None) -> tuple[Document, dict[str, Path]]:
+    parser = _Parser(id_prefix, source_base, generated_base)
     document, attachments = parser.parse(filename)
     if json_file:
         parser.validate_json(document, json_file)

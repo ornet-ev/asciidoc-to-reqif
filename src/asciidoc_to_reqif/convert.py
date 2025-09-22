@@ -34,11 +34,18 @@ def main():
         tempfile.tempdir = str(args.tmpdir)
     with tempfile.TemporaryDirectory(delete=not args.keep_tmp, prefix=datetime.datetime.now().isoformat(timespec="seconds")) as tmp_dir_str:
         tmp_dir = Path(tmp_dir_str)
-        subprocess.run(["asciidoctor", "-r", ruby_helper , "--backend", "plainxml", "--trace", "--destination-dir", tmp_dir, args.input], check=True)
+        subprocess.run([
+            "asciidoctor",
+            "-r", "asciidoctor-diagram",
+            "-r", ruby_helper,
+            "--backend", "plainxml",
+            "--trace",
+            "--destination-dir", tmp_dir,
+            args.input], check=True)
         xml_export = tmp_dir / args.input.with_suffix(".xml").name
         req_if = tmp_dir / xml_export.with_suffix(".reqif").name
         id_prefix = document_name
-        document, attachments = parse_xml(xml_export, id_prefix, args.input.parent, args.json)
+        document, attachments = parse_xml(xml_export, id_prefix, args.input.parent, tmp_dir, args.json)
         build(args.base, req_if , document, document_title=document_name, commit_hash="deadbeef") # TODO: parse revision
         package(req_if, args.output, other_files=attachments)
 
