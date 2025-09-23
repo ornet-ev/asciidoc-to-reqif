@@ -1,0 +1,55 @@
+name: Feature Build
+
+on: [ push ]
+
+env:
+  CI: true
+
+jobs:
+  reqif:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          path: asciidoc_to_reqif
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" | tr '/' '-' >> $GITHUB_OUTPUT
+        id: extract_branch
+
+      - name: Install asciidoctor
+        run: sudo apt update && sudo apt install -y asciidoctor
+
+      - name: Install plantuml gems
+        run: gem install --user asciidoctor-diagram asciidoctor-diagram-plantuml
+
+      - name: Install python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install generator
+        run: pip install ./asciidoc_to_reqif
+
+      - name: Check out standard-development-process
+        uses: actions/checkout@v5
+        with:
+          repository: ornet-ev/standard-development-process
+          ref: "97e595240104cb5b912a68187c17604e2718bbb4"
+          path: input
+
+      - name: generate ReqIF
+        run: asciidoc-to-reqif input/specification/good_practice.adoc good_practice.reqifz -vv --json input/specification/good_practice.json
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: good-practice-reqif-${{ steps.extract_branch.outputs.branch }}
+          path: good_practice.reqifz
+          if-no-files-found: 'error'
