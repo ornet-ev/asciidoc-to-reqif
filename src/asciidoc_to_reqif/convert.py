@@ -18,6 +18,8 @@ def parse_args():
     parser.add_argument("--keep-tmp", action="store_true", help="keep temporary working directory for debugging")
     parser.add_argument("--sourcedir", type=Path, help="path for image locations")
     parser.add_argument("--json", type=Path, default=None, help="path to load JSON to verify requirement parsing")
+    parser.add_argument("--no-plantuml", action="store_true",
+                        help="Do not generate PlantUML diagrams (to avoid installing dependencies)")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="verbose")
     args = parser.parse_args()
     logging.basicConfig(level={0: logging.WARN, 1: logging.INFO, 2: logging.DEBUG}[args.verbose])
@@ -32,21 +34,24 @@ def main():
     document_name = args.input.stem
     if args.tmpdir:
         tempfile.tempdir = str(args.tmpdir)
-    with tempfile.TemporaryDirectory(delete=not args.keep_tmp, prefix=datetime.datetime.now().isoformat(timespec="seconds")) as tmp_dir_str:
+    with tempfile.TemporaryDirectory(delete=not args.keep_tmp,
+                                     prefix=datetime.datetime.now().isoformat(timespec="seconds")) as tmp_dir_str:
         tmp_dir = Path(tmp_dir_str)
-        subprocess.run([
-            "asciidoctor",
-            "-r", "asciidoctor-diagram",
-            "-r", ruby_helper,
-            "--backend", "plainxml",
-            "--trace",
-            "--destination-dir", tmp_dir,
-            args.input], check=True)
+        commands = (
+                ["asciidoctor", ] +
+                ([] if args.no_plantuml else ["-r", "asciidoctor-diagram"]) +
+                ["-r", ruby_helper,
+                 "--backend", "plainxml",
+                 "--trace",
+                 "--destination-dir", tmp_dir,
+                 args.input
+                 ])
+        subprocess.run(commands, check=True)
         xml_export = tmp_dir / args.input.with_suffix(".xml").name
         req_if = tmp_dir / xml_export.with_suffix(".reqif").name
         id_prefix = document_name
         document, attachments = parse_xml(xml_export, id_prefix, args.input.parent, tmp_dir, args.json)
-        build(args.base, req_if , document, document_title=document_name, commit_hash="deadbeef") # TODO: parse revision
+        build(args.base, req_if, document, document_title=document_name, commit_hash="deadbeef")  # TODO: parse revision
         package(req_if, args.output, other_files=attachments)
 
 

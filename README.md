@@ -47,6 +47,9 @@ The following is required to run this tool:
 1. `asciidoctor`
 2. a python3 interpreter (3.12 works, earlier versions might)
 
+### Optional
+1. ruby gems `asciidoctor-diagram asciidoctor-diagram-plantuml`. If you don't need PlantUML, use the `--no-plantuml` parameter.
+
 ## Installation
 
     python3 -m venv /path/to/env
