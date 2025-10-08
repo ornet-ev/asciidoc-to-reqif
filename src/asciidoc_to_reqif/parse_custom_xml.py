@@ -46,12 +46,14 @@ class _Parser:
         self.id_prefix: str = id_prefix
         self.source_base: Path = source_base
         self.generated_base: Path = generated_base
+        self.images_dir: Path|None = None
 
     def make_id(self, original_ref_id):
         return f"{self.id_prefix}_{original_ref_id}"
 
     def parse_document(self, node: ET.Element) -> tuple[Document, Attachments]:
         assert node.tag == "document"
+        self.images_dir = node.attrib["imagesdir"]
         children, attachments = self.parse_children(node, chapter_ref_id="document")
         return Document(
             name=node.attrib["name"],
@@ -162,10 +164,18 @@ class _Parser:
         ), attachments
 
     def get_absolute_attachment_path(self, relative_file: Path, base_dir: Path|None) -> Path:
+        if relative_file.is_absolute():
+            logger.debug("attachment %s can be found at %s (relative_file was absolute)", relative_file, relative_file)
+            return relative_file
         if base_dir:
-            return base_dir / relative_file
-        absolute_source = self.source_base / relative_file
-        absolute_generated = self.generated_base / relative_file
+            relative_file = base_dir / relative_file
+        if relative_file.is_absolute():
+            logger.debug("attachment %s can be found at %s (base_dir was absolute)", relative_file, relative_file)
+            return relative_file
+        absolute_source = (self.source_base / relative_file).absolute()
+        absolute_generated = (self.generated_base / relative_file).absolute()
+        assert absolute_source.is_absolute()
+        assert absolute_generated.is_absolute()
         if absolute_source.exists() and absolute_generated.exists() and absolute_source != absolute_generated:
             raise RuntimeError(f"Relative file {relative_file} is ambiguous: both {absolute_source} and {absolute_generated} exist")
         result = absolute_source if absolute_source.exists() else (absolute_generated if absolute_generated.exists() else None)
@@ -177,7 +187,7 @@ class _Parser:
 
     def parse_image(self, node) -> tuple[InfoItem, dict[str, Path]]:
         relative_file = Path(node.attrib["src"])
-        absolute_file: Path = self.get_absolute_attachment_path(Path("images") / relative_file, node.attrib["dir"])
+        absolute_file: Path = self.get_absolute_attachment_path(self.images_dir / relative_file, node.attrib["dir"])
         has_stable_id = bool(node.attrib["id"])
         if has_stable_id:
             figure_id = node.attrib["id"]
@@ -234,6 +244,9 @@ class _Parser:
 def parse(filename: Path, id_prefix: str, source_base: Path, generated_base: Path, json_file: Path | None) -> tuple[Document, dict[str, Path]]:
     parser = _Parser(id_prefix, source_base, generated_base)
     document, attachments = parser.parse(filename)
+    logger.debug("attachments:")
+    for key, value in attachments.items():
+        logger.debug("  %s -> %s", key, value)
     if json_file:
         parser.validate_json(document, json_file)
     else:
