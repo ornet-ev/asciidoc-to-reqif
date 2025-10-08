@@ -19,7 +19,12 @@ class ReqIfConverter
     def convert_document node
         a = node.attributes
         <<~EOS.chomp
-        <document xmlns:xhtml="http://www.w3.org/1999/xhtml" name="#{a['docname']}" srcdir="#{a['docdir']}" title="#{a['doctitle']}">
+        <document xmlns:xhtml="http://www.w3.org/1999/xhtml"
+         name="#{a['docname']}"
+         srcdir="#{a['docdir']}"
+         title="#{a['doctitle']}"
+         imagesdir="#{a['imagesdir']}"
+         >
         #{node.content}
         </document>
         EOS
