@@ -17,6 +17,11 @@ Attachments = dict[str, Path]
 
 logger = logging.getLogger(__name__)
 
+def path_or_none(s: str) -> Path|None:
+    if s:
+        return Path(s)
+    else:
+        return None
 
 class ParagraphQueue:
     def __init__(self, ref_id_prefix: str):
@@ -163,15 +168,32 @@ class _Parser:
             text=text,
         ), attachments
 
-    def get_absolute_attachment_path(self, relative_file: Path, base_dir: Path|None) -> Path:
-        if relative_file.is_absolute():
-            logger.debug("attachment %s can be found at %s (relative_file was absolute)", relative_file, relative_file)
-            return relative_file
+    def get_absolute_attachment_path(self, input_file: Path, base_dir: Path|None, images_dir: Path|None) -> Path:
+        absolute_file, reason = self.get_absolute_attachment_path_inner(input_file, base_dir, images_dir)
+        logger.debug("attachment %s can be found at %s (%s)", input_file, absolute_file, reason)
+        return absolute_file
+
+    def get_absolute_attachment_path_inner(self, input_file: Path, base_dir: Path|None, images_dir: Path) -> tuple[Path, str]:
+        if input_file.is_absolute():
+            return input_file, "input_file is absolute"
+        if images_dir: # image is generated
+            # if images_dir is set, it points to the parent of the file, not to the parent of the src path!
+            file_name = images_dir / input_file.name
+            if file_name.is_absolute():
+                return file_name, "images_dir is absolute"
+            else:
+                return self.find_relative_in_source_or_generated(file_name), "images_dir is relative"
         if base_dir:
-            relative_file = base_dir / relative_file
-        if relative_file.is_absolute():
-            logger.debug("attachment %s can be found at %s (base_dir was absolute)", relative_file, relative_file)
-            return relative_file
+            file_name = base_dir / input_file
+            if file_name.is_absolute():
+                return file_name, "base_dir is absolute"
+            else:
+                return self.find_relative_in_source_or_generated(file_name), "base_dir is relative"
+        else:
+            return self.find_relative_in_source_or_generated(input_file), "no subdirs set"
+
+    def find_relative_in_source_or_generated(self, relative_file) -> Path:
+        assert not relative_file.is_absolute()
         absolute_source = (self.source_base / relative_file).absolute()
         absolute_generated = (self.generated_base / relative_file).absolute()
         assert absolute_source.is_absolute()
@@ -179,15 +201,15 @@ class _Parser:
         if absolute_source.exists() and absolute_generated.exists() and absolute_source != absolute_generated:
             raise RuntimeError(f"Relative file {relative_file} is ambiguous: both {absolute_source} and {absolute_generated} exist")
         result = absolute_source if absolute_source.exists() else (absolute_generated if absolute_generated.exists() else None)
-        logger.debug("attachment %s can be found at %s", relative_file, result)
         if not result:
             raise RuntimeError(f"Neither {absolute_source} nor {absolute_generated} exist")
         return result
 
 
     def parse_image(self, node) -> tuple[InfoItem, dict[str, Path]]:
-        relative_file = Path(node.attrib["src"])
-        absolute_file: Path = self.get_absolute_attachment_path(self.images_dir / relative_file, node.attrib["dir"])
+        relative_file = path_or_none(node.attrib["src"])
+        assert relative_file, "src attribute is required"
+        absolute_file: Path = self.get_absolute_attachment_path(relative_file, path_or_none(node.attrib["dir"]), path_or_none(node.attrib["imagesdir"]))
         has_stable_id = bool(node.attrib["id"])
         if has_stable_id:
             figure_id = node.attrib["id"]

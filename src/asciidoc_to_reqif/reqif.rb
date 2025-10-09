@@ -94,7 +94,12 @@ class ReqIfConverter
         dir = node.attributes.key?('imagesdir') ? node.attributes['imagesdir'] : ""
         self.try_add_reference node
         <<~EOS.chomp
-        <image id="#{node.attributes['id']}" dir="#{dir}" src="#{node.attributes['target']}"/>
+        <image
+          id="#{node.attributes['id']}"
+          dir="#{dir}"
+          src="#{node.attributes['target']}"
+          imagesdir="#{node.attributes['imagesdir']}"
+          />
         <!-- #{node.attributes} -->
         <!-- #{node} -->
         EOS
