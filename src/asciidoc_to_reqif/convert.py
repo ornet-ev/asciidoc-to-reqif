@@ -44,6 +44,8 @@ def main():
                  "--backend", "plainxml",
                  "--trace",
                  "--destination-dir", tmp_dir,
+                 f"--attribute=imagesoutdir={tmp_dir/'myimagesoutdir'}",
+                 f"--attribute=diagram-autoimagesdir",
                  args.input
                  ])
         subprocess.run(commands, check=True)
