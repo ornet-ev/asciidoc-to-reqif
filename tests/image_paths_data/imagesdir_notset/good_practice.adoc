@@ -1,0 +1,25 @@
+= P{ieee_metadata_designation}™/D{ieee_metadata_draft_number} -- Draft {ieee_metadata_trial_use} {ieee_metadata_gde_rec_prac_std} for {ieee_metadata_par_title}
+:doctype: book
+:xrefstyle: short
+:toc-title: Contents
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+:docinfo: shared
+
+
+.Example PlantUML
+[plantuml#fig_plantuml,target=generated/plantuml/custom/fig_plantumlexample,format=png]
+....
+@startuml
+
+Alice -> Bob: Authentication Request
+Bob --> Alice: Authentication Response
+
+@enduml
+....
+
+.Example image include
+[#figure_image]
+image::images/test_image.png[]

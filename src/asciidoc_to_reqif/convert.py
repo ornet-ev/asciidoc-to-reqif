@@ -1,11 +1,10 @@
 import argparse
 import tempfile
 from pathlib import Path
-import subprocess
 import datetime # TODO: remove
 import logging
 
-from .parse_custom_xml import parse as parse_xml
+from .parse_custom_xml import parse_adoc
 from .generate_reqif import build, package
 
 
@@ -30,29 +29,15 @@ def parse_args():
 
 def main():
     args = parse_args()
-    ruby_helper = Path(__file__).parent / "reqif.rb"
     document_name = args.input.stem
     if args.tmpdir:
         tempfile.tempdir = str(args.tmpdir)
     with tempfile.TemporaryDirectory(delete=not args.keep_tmp,
                                      prefix=datetime.datetime.now().isoformat(timespec="seconds")) as tmp_dir_str:
         tmp_dir = Path(tmp_dir_str)
-        commands = (
-                ["asciidoctor", ] +
-                ([] if args.no_plantuml else ["-r", "asciidoctor-diagram"]) +
-                ["-r", ruby_helper,
-                 "--backend", "plainxml",
-                 "--trace",
-                 "--destination-dir", tmp_dir,
-                 f"--attribute=imagesoutdir={tmp_dir/'myimagesoutdir'}",
-                 f"--attribute=diagram-autoimagesdir",
-                 args.input
-                 ])
-        subprocess.run(commands, check=True)
-        xml_export = tmp_dir / args.input.with_suffix(".xml").name
-        req_if = tmp_dir / xml_export.with_suffix(".reqif").name
-        id_prefix = document_name
-        document, attachments = parse_xml(xml_export, id_prefix, args.input.parent, tmp_dir, args.json)
+        document, attachments = parse_adoc(filename=args.input, json_file=args.json, tmp_dir=tmp_dir, enable_plantuml=not args.no_plantuml)
+
+        req_if = tmp_dir / args.input.with_suffix(".reqif").name
         build(args.base, req_if, document, document_title=document_name, commit_hash="deadbeef")  # TODO: parse revision
         package(req_if, args.output, other_files=attachments)
 
