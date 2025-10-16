@@ -62,6 +62,13 @@ The following is required to run this tool:
 
 Use `--help` to get more options.
 
+
+## Contributing
+Install development-dependencies and run pytest:
+
+    python -m pip install -e '/path/to/repo/asciidoc_to_reqif[dev]'
+    pytest /path/to/repo/asciidoc_to_reqif
+
 ## Technical details
 This backend consists of two parts:
 * A ruby-script to be used as an asciidoctor-backend which generates an intermediate xml representation.
