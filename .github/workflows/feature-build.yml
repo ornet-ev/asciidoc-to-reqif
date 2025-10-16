@@ -35,7 +35,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install generator
-        run: pip install ./asciidoc_to_reqif
+        run: pip install './asciidoc_to_reqif[dev]'
 
       - name: Check out standard-development-process
         uses: actions/checkout@v5
@@ -43,6 +43,9 @@ jobs:
           repository: ornet-ev/standard-development-process
           ref: "97e595240104cb5b912a68187c17604e2718bbb4"
           path: input
+
+      - name: run unittests
+        run: pytest ./asciidoc_to_reqif
 
       - name: generate ReqIF
         run: asciidoc-to-reqif input/specification/good_practice.adoc good_practice.reqifz -vv --json input/specification/good_practice.json

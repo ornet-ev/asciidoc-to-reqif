@@ -20,6 +20,10 @@ classifiers = [
 ]
 dependencies = [
 ]
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
 
 [project.urls]
 #source = "TODO"
