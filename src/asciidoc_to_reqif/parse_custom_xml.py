@@ -4,6 +4,7 @@ import logging
 import random
 import re
 import string
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from .model import Requirement, Heading, InfoItem, Document, WorkItem, get_all_items
@@ -263,7 +264,7 @@ class _Parser:
                 f"expected requirements in JSON file do not match asciidoc input:\nJSON:     {expected_ids}\nASCIIDOC: {found_ids}")
 
 
-def parse(filename: Path, id_prefix: str, source_base: Path, generated_base: Path, json_file: Path | None) -> tuple[Document, dict[str, Path]]:
+def parse_xml(filename: Path, id_prefix: str, source_base: Path, generated_base: Path, json_file: Path | None) -> tuple[Document, dict[str, Path]]:
     parser = _Parser(id_prefix, source_base, generated_base)
     document, attachments = parser.parse(filename)
     logger.debug("attachments:")
@@ -273,4 +274,28 @@ def parse(filename: Path, id_prefix: str, source_base: Path, generated_base: Pat
         parser.validate_json(document, json_file)
     else:
         logger.warning("no JSON file specified, no cross-check performed")
+    return document, attachments
+
+def parse_adoc(filename: Path, tmp_dir: Path, enable_plantuml: bool, json_file: Path | None)-> tuple[Document, dict[str, Path]]:
+    ruby_helper = Path(__file__).parent / "reqif.rb"
+    commands = (
+            ["asciidoctor", ] +
+            (["-r", "asciidoctor-diagram"] if enable_plantuml else []) +
+            ["-r", ruby_helper,
+             "--backend", "plainxml",
+             "--trace",
+             "--destination-dir", tmp_dir,
+             f"--attribute=imagesoutdir={tmp_dir/'myimagesoutdir'}",
+             f"--attribute=diagram-autoimagesdir",
+             filename
+             ])
+    try:
+        subprocess.run(commands, check=True, stderr=subprocess.PIPE, text=True)
+    except subprocess.CalledProcessError as e:
+        e.add_note(e.stderr)
+        raise
+    xml_export = tmp_dir / filename.with_suffix(".xml").name
+    id_prefix = filename.stem
+    document, attachments = parse_xml(xml_export, id_prefix, filename.parent, tmp_dir, json_file)
+
     return document, attachments
