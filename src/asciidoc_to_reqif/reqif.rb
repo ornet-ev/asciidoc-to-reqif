@@ -108,17 +108,19 @@ class ReqIfConverter
     def convert_table node
         content = ""
         node.rows.by_section.each do |sections|
-            part_tag = "xhtml:t#{sections[0]}"
-            content += "<#{part_tag}>"
-            sections[1].each do |row|
-                content += "<xhtml:tr>"
-                row.each do |cell|
-                    cell_content = cell.inner_document ? cell.inner_document.content : cell.text
-                    content += "<xhtml:td colspan=\"#{cell.colspan ? cell.colspan : 1}\">#{cell_content}</xhtml:td>"
+            if sections[1].length() > 0
+                part_tag = "xhtml:t#{sections[0]}"
+                content += "<#{part_tag}>"
+                sections[1].each do |row|
+                    content += "<xhtml:tr>"
+                    row.each do |cell|
+                        cell_content = cell.inner_document ? cell.inner_document.content : cell.text
+                        content += "<xhtml:td colspan=\"#{cell.colspan ? cell.colspan : 1}\">#{cell_content}</xhtml:td>"
+                    end
+                    content += "</xhtml:tr>"
                 end
-                content += "</xhtml:tr>"
+                content += "</#{part_tag}>"
             end
-            content += "</#{part_tag}>"
         end
         <<~EOS.chomp
         <table id="#{node.attributes['id']}">
